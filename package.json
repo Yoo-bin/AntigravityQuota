@@ -1,0 +1,21 @@
+{
+  "name": "antigravity-quota",
+  "version": "1.0.0",
+  "description": "CLI toolkit for checking Antigravity quota usage",
+  "type": "module",
+  "main": "src/index.ts",
+  "bin": {
+    "ag": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun run src/index.ts"
+  },
+  "keywords": ["antigravity", "quota", "cli"],
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "cli-table3": "^0.6.5",
+    "commander": "^12.1.0"
+  }
+}
