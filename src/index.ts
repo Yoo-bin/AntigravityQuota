@@ -74,9 +74,14 @@ program
     }
   });
 
-function formatResetTime(date: Date): string {
+function formatResetTime(date: Date, isFullQuota: boolean = false): string {
   const now = new Date();
-  const diffMs = date.getTime() - now.getTime();
+  let diffMs = date.getTime() - now.getTime();
+
+  // 100% Quota인 경우 1분을 더해서 깔끔한 시간 표시
+  if (isFullQuota) {
+    diffMs += 60 * 1000;
+  }
 
   // Reset 시간이 지난 경우
   if (diffMs <= 0) {
@@ -157,7 +162,7 @@ function displayResults(results: AccountQuota[]): void {
       table.push([
         quota.model,
         colorFn(`${quota.remainingPercent.toFixed(1)}%`),
-        formatResetTime(quota.resetTime),
+        formatResetTime(quota.resetTime, quota.remainingPercent === 100),
       ]);
     }
 
