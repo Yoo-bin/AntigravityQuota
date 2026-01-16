@@ -27,6 +27,36 @@ ag quota --raw
 ag quota -r
 ```
 
+## 쉘 자동완성
+
+bash, zsh, fish 쉘에서 탭 자동완성을 사용할 수 있습니다.
+
+```bash
+# 자동 설치 (권장)
+ag completion --install
+
+# 또는 각 쉘별 수동 설정:
+
+# Zsh
+echo 'eval "$(ag completion zsh)"' >> ~/.zshrc
+
+# Bash
+echo 'eval "$(ag completion bash)"' >> ~/.bashrc
+
+# Fish
+echo 'ag completion fish | source' >> ~/.config/fish/config.fish
+```
+
+설정 후 쉘을 재시작하거나 `source ~/.zshrc` (또는 해당 쉘 설정 파일)를 실행하세요.
+
+### 자동완성 예시
+
+| 입력               | 자동완성 결과            |
+|--------------------|--------------------------|
+| `ag q<TAB>`        | `quota`                  |
+| `ag c<TAB>`        | `completion`             |
+| `ag quota -<TAB>`  | `--raw`, `-r`, `--help`  |
+
 ### 출력 예시
 
 ```

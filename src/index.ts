@@ -3,15 +3,57 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import Table from "cli-table3";
+import tabtab from "tabtab";
 import { loadAccounts } from "./config";
 import { refreshAccessToken } from "./auth";
 import { fetchQuota, fetchQuotaRaw } from "./api";
 import type { AccountQuota, FetchAvailableModelsResponse, ProcessedQuota } from "./types";
 
+// 자동완성 명령어 및 옵션 정의
+const COMMANDS = ["quota", "completion", "help"];
+const QUOTA_OPTIONS = ["--raw", "-r", "--help", "-h"];
+const COMPLETION_OPTIONS = ["--install", "--uninstall", "--help", "-h"];
+
 interface RawAccountQuota {
   email: string;
   rawResponse?: FetchAvailableModelsResponse;
   error?: string;
+}
+
+// 자동완성 요청 처리 함수
+async function handleCompletion(): Promise<boolean> {
+  const env = tabtab.parseEnv(process.env);
+  if (!env.complete) return false;
+
+  const { prev, words, lastPartial } = env;
+
+  // 첫 번째 인자 (명령어) 자동완성
+  if (words === 1) {
+    const completions = COMMANDS.filter(cmd => 
+      cmd.startsWith(lastPartial)
+    );
+    tabtab.log(completions);
+    return true;
+  }
+
+  // 두 번째 인자 이상 (옵션) 자동완성
+  const command = env.line.split(/\s+/)[1];
+  
+  if (command === "quota") {
+    const completions = QUOTA_OPTIONS.filter(opt => 
+      opt.startsWith(lastPartial) && !env.line.includes(opt)
+    );
+    tabtab.log(completions);
+  } else if (command === "completion") {
+    const completions = COMPLETION_OPTIONS.filter(opt => 
+      opt.startsWith(lastPartial) && !env.line.includes(opt)
+    );
+    tabtab.log(completions);
+  } else {
+    tabtab.log([]);
+  }
+
+  return true;
 }
 
 const program = new Command();
@@ -71,6 +113,75 @@ program
         error instanceof Error ? error.message : String(error)
       );
       process.exit(1);
+    }
+    });
+
+program
+  .command("completion [shell]")
+  .description("Generate shell completion script (bash, zsh, fish)")
+  .option("--install", "Install completion to your shell config file")
+  .option("--uninstall", "Uninstall completion from your shell config file")
+  .action(async (shell: string | undefined, options: { install?: boolean; uninstall?: boolean }) => {
+    const name = "ag";
+    
+    if (options.install) {
+      try {
+        await tabtab.install({
+          name,
+          completer: name,
+        });
+        console.log(chalk.green("Shell completion installed successfully!"));
+        console.log(chalk.gray("Please restart your shell or run: source ~/.zshrc (or ~/.bashrc)"));
+      } catch (error) {
+        console.error(chalk.red("Failed to install completion:"), error);
+        process.exit(1);
+      }
+    } else if (options.uninstall) {
+      try {
+        await tabtab.uninstall({
+          name,
+        });
+        console.log(chalk.green("Shell completion uninstalled successfully!"));
+      } catch (error) {
+        console.error(chalk.red("Failed to uninstall completion:"), error);
+        process.exit(1);
+      }
+    } else if (shell) {
+      // 특정 쉘의 completion 스크립트 출력
+      const validShells = ["bash", "zsh", "fish"];
+      if (!validShells.includes(shell)) {
+        console.error(chalk.red(`Invalid shell: ${shell}`));
+        console.log(chalk.gray(`Valid options: ${validShells.join(", ")}`));
+        process.exit(1);
+      }
+      
+      try {
+        const scriptPath = new URL(`../node_modules/tabtab/lib/scripts/${shell}.sh`, import.meta.url).pathname;
+        const script = await Bun.file(scriptPath).text();
+        // tabtab 템플릿 변수를 실제 값으로 대체
+        const output = script
+          .replace(/{pkgname}/g, name)
+          .replace(/{completer}/g, name)
+          .replace(/__name__/g, name)
+          .replace(/__completer__/g, name);
+        console.log(output);
+      } catch (error) {
+        console.error(chalk.red(`Failed to generate ${shell} completion script`));
+        process.exit(1);
+      }
+    } else {
+      // 쉘 타입별 completion 스크립트 출력 안내
+      console.log(chalk.bold("Shell Completion Setup\n"));
+      console.log("To enable tab completion, run one of the following:\n");
+      console.log(chalk.cyan("  Automatic install (recommended):"));
+      console.log(chalk.white("    ag completion --install\n"));
+      console.log(chalk.cyan("  Manual setup:"));
+      console.log(chalk.gray("    # For Zsh (add to ~/.zshrc):"));
+      console.log(chalk.white('    source <(ag completion zsh)\n'));
+      console.log(chalk.gray("    # For Bash (add to ~/.bashrc):"));
+      console.log(chalk.white('    source <(ag completion bash)\n'));
+      console.log(chalk.gray("    # For Fish (add to ~/.config/fish/config.fish):"));
+      console.log(chalk.white('    ag completion fish | source\n'));
     }
   });
 
@@ -171,4 +282,9 @@ function displayResults(results: AccountQuota[]): void {
   console.log();
 }
 
-program.parse();
+// 자동완성 요청인 경우 먼저 처리하고 종료
+handleCompletion().then((handled) => {
+  if (!handled) {
+    program.parse();
+  }
+});
