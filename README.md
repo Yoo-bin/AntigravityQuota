@@ -29,6 +29,36 @@ ag quota --raw
 ag quota -r
 ```
 
+## Shell Completion
+
+Enable tab completion for bash, zsh, or fish shells.
+
+```bash
+# Automatic install (recommended)
+ag completion --install
+
+# Or manual setup for each shell:
+
+# Zsh
+echo 'eval "$(ag completion zsh)"' >> ~/.zshrc
+
+# Bash
+echo 'eval "$(ag completion bash)"' >> ~/.bashrc
+
+# Fish
+echo 'ag completion fish | source' >> ~/.config/fish/config.fish
+```
+
+After setup, restart your shell or run `source ~/.zshrc` (or equivalent).
+
+### Completion Examples
+
+| Input              | Completion Result        |
+|--------------------|--------------------------|
+| `ag q<TAB>`        | `quota`                  |
+| `ag c<TAB>`        | `completion`             |
+| `ag quota -<TAB>`  | `--raw`, `-r`, `--help`  |
+
 ### Output Example
 
 ```
